@@ -465,6 +465,7 @@
 
             if (response.ok && data.success) {
                 showToast('开启成功', 'success');
+                setTimeout(() => location.reload(), 1000);
             } else {
                 showToast(data.error || '开启失败', 'error');
             }
