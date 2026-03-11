@@ -63,6 +63,29 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
+    position: relative;
+}
+
+/* Global blurred background image (applies to all admin pages) */
+body::before {
+    content: '';
+    position: fixed;
+    inset: -40px;
+    background-image: url('https://github.com/user-attachments/assets/b00a06b8-9772-4be8-bcc0-503dca71648d');
+    background-size: cover;
+    background-position: center;
+    filter: blur(32px);
+    z-index: -2;
+    pointer-events: none;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(238, 242, 255, 0.82) 0%, rgba(249, 250, 251, 0.88) 100%);
+    z-index: -1;
+    pointer-events: none;
 }
 
 /* Animations */
@@ -1097,11 +1120,11 @@ body {
 .auth-container::before {
     content: '';
     position: absolute;
-    inset: -30px;
+    inset: -50px;
     background-image: url('https://github.com/user-attachments/assets/b00a06b8-9772-4be8-bcc0-503dca71648d');
     background-size: cover;
     background-position: center;
-    filter: blur(14px);
+    filter: blur(32px);
     z-index: 0;
 }
 

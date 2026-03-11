@@ -106,6 +106,11 @@ def run_auto_migration():
             logger.info("添加 teams.device_code_auth_enabled 字段")
             cursor.execute("ALTER TABLE teams ADD COLUMN device_code_auth_enabled BOOLEAN DEFAULT 0")
             migrations_applied.append("teams.device_code_auth_enabled")
+
+        if not column_exists(cursor, "teams", "proxy"):
+            logger.info("添加 teams.proxy 字段")
+            cursor.execute("ALTER TABLE teams ADD COLUMN proxy VARCHAR(500)")
+            migrations_applied.append("teams.proxy")
         
         # 提交更改
         conn.commit()

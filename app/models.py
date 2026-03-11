@@ -30,6 +30,7 @@ class Team(Base):
     status = Column(String(20), default="active", comment="状态: active/full/expired/error/banned")
     account_role = Column(String(50), comment="账号角色: account-owner/standard-user 等")
     device_code_auth_enabled = Column(Boolean, default=False, comment="是否开启设备代码身份验证")
+    proxy = Column(String(500), comment="账号专用代理（留空则使用全局代理），格式: http://host:port 或 socks5://host:port")
     error_count = Column(Integer, default=0, comment="连续报错次数")
     last_sync = Column(DateTime, comment="最后同步时间")
     created_at = Column(DateTime, default=get_now, comment="创建时间")

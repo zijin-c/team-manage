@@ -30,20 +30,23 @@ class ChatGPTService:
         self._sessions: Dict[str, AsyncSession] = {}
         self.proxy: Optional[str] = None
 
-    async def _get_proxy_config(self, db_session: DBAsyncSession) -> Optional[str]:
+    async def _get_proxy_config(self, db_session: DBAsyncSession, team_proxy: Optional[str] = None) -> Optional[str]:
         """
-        获取代理配置
+        获取代理配置：优先使用账号专用代理，其次使用全局代理
         """
+        # 账号专用代理优先
+        if team_proxy:
+            return team_proxy
         proxy_config = await settings_service.get_proxy_config(db_session)
         if proxy_config["enabled"] and proxy_config["proxy"]:
             return proxy_config["proxy"]
         return None
 
-    async def _create_session(self, db_session: DBAsyncSession) -> AsyncSession:
+    async def _create_session(self, db_session: DBAsyncSession, team_proxy: Optional[str] = None) -> AsyncSession:
         """
         创建 HTTP 会话
         """
-        proxy = await self._get_proxy_config(db_session)
+        proxy = await self._get_proxy_config(db_session, team_proxy)
         # 使用 chrome110 指纹，这是 curl_cffi 中绕过 CF 最稳定的版本之一
         session = AsyncSession(
             impersonate="chrome110",
@@ -53,14 +56,16 @@ class ChatGPTService:
         )
         return session
 
-    async def _get_session(self, db_session: DBAsyncSession, identifier: str) -> AsyncSession:
+    async def _get_session(self, db_session: DBAsyncSession, identifier: str, team_proxy: Optional[str] = None) -> AsyncSession:
         """
-        根据标识符获取或创建持久会话
+        根据标识符获取或创建持久会话；若提供了 team_proxy 则强制重建会话以应用新代理
         """
-        if identifier not in self._sessions:
-            logger.info(f"为标识符 {identifier} 创建新会话")
-            self._sessions[identifier] = await self._create_session(db_session)
-        return self._sessions[identifier]
+        # 若提供了账号专用代理，使用代理感知的会话键，防止与无代理会话混用
+        session_key = f"{identifier}:proxy:{team_proxy}" if team_proxy else identifier
+        if session_key not in self._sessions:
+            logger.info(f"为标识符 {session_key} 创建新会话")
+            self._sessions[session_key] = await self._create_session(db_session, team_proxy)
+        return self._sessions[session_key]
 
     async def _make_request(
         self,
@@ -69,10 +74,12 @@ class ChatGPTService:
         headers: Dict[str, str],
         json_data: Optional[Dict[str, Any]] = None,
         db_session: Optional[DBAsyncSession] = None,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         发送 HTTP 请求 (使用持久化隔离会话，提高 CF 通过率并防止污染)
+        team_proxy: 账号专用代理（可选），优先级高于全局代理
         """
         # 尝试从 Header 或 Token 自动提取标识符，确保身份绝对隔离
         if identifier == "default":
@@ -87,7 +94,7 @@ class ChatGPTService:
                 if email:
                     identifier = email
 
-        session = await self._get_session(db_session, identifier)
+        session = await self._get_session(db_session, identifier, team_proxy)
         
         # 补全基础浏览器请求头
         base_headers = {
@@ -170,7 +177,8 @@ class ChatGPTService:
         account_id: str,
         email: str,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """发送 Team 邀请"""
         url = f"{self.BASE_URL}/accounts/{account_id}/invites"
@@ -180,14 +188,15 @@ class ChatGPTService:
             "chatgpt-account-id": account_id
         }
         json_data = {"email_addresses": [email], "role": "standard-user", "resend_emails": True}
-        return await self._make_request("POST", url, headers, json_data, db_session, identifier)
+        return await self._make_request("POST", url, headers, json_data, db_session, identifier, team_proxy)
 
     async def get_members(
         self,
         access_token: str,
         account_id: str,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取 Team 成员列表"""
         all_members = []
@@ -196,7 +205,7 @@ class ChatGPTService:
         while True:
             url = f"{self.BASE_URL}/accounts/{account_id}/users?limit={limit}&offset={offset}"
             headers = {"Authorization": f"Bearer {access_token}"}
-            result = await self._make_request("GET", url, headers, db_session=db_session, identifier=identifier)
+            result = await self._make_request("GET", url, headers, db_session=db_session, identifier=identifier, team_proxy=team_proxy)
             if not result["success"]:
                 return {"success": False, "members": [], "total": 0, "error": result["error"]}
             data = result["data"]
@@ -213,7 +222,8 @@ class ChatGPTService:
         access_token: str,
         account_id: str,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取 Team 邀请列表"""
         url = f"{self.BASE_URL}/accounts/{account_id}/invites"
@@ -221,7 +231,7 @@ class ChatGPTService:
             "Authorization": f"Bearer {access_token}",
             "chatgpt-account-id": account_id
         }
-        result = await self._make_request("GET", url, headers, db_session=db_session, identifier=identifier)
+        result = await self._make_request("GET", url, headers, db_session=db_session, identifier=identifier, team_proxy=team_proxy)
         if not result["success"]:
             return {"success": False, "items": [], "total": 0, "error": result["error"]}
         data = result["data"]
@@ -234,7 +244,8 @@ class ChatGPTService:
         account_id: str,
         email: str,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """撤回邀请"""
         url = f"{self.BASE_URL}/accounts/{account_id}/invites"
@@ -244,7 +255,7 @@ class ChatGPTService:
             "chatgpt-account-id": account_id
         }
         json_data = {"email_address": email}
-        return await self._make_request("DELETE", url, headers, json_data, db_session, identifier)
+        return await self._make_request("DELETE", url, headers, json_data, db_session, identifier, team_proxy)
 
     async def delete_member(
         self,
@@ -252,7 +263,8 @@ class ChatGPTService:
         account_id: str,
         user_id: str,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """删除成员"""
         url = f"{self.BASE_URL}/accounts/{account_id}/users/{user_id}"
@@ -260,7 +272,7 @@ class ChatGPTService:
             "Authorization": f"Bearer {access_token}",
             "chatgpt-account-id": account_id
         }
-        result = await self._make_request("DELETE", url, headers, db_session=db_session, identifier=identifier)
+        result = await self._make_request("DELETE", url, headers, db_session=db_session, identifier=identifier, team_proxy=team_proxy)
         return result
 
     async def toggle_beta_feature(
@@ -270,7 +282,8 @@ class ChatGPTService:
         feature: str,
         value: bool,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """开启或关闭 Beta 功能"""
         url = f"{self.BASE_URL}/accounts/{account_id}/beta_features"
@@ -282,18 +295,19 @@ class ChatGPTService:
             "sec-ch-ua-platform": '"Windows"'
         }
         json_data = {"feature": feature, "value": value}
-        return await self._make_request("POST", url, headers, json_data, db_session, identifier)
+        return await self._make_request("POST", url, headers, json_data, db_session, identifier, team_proxy)
 
     async def get_account_info(
         self,
         access_token: str,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取账户和订阅信息"""
         url = f"{self.BASE_URL}/accounts/check/v4-2023-04-27"
         headers = {"Authorization": f"Bearer {access_token}"}
-        result = await self._make_request("GET", url, headers, db_session=db_session, identifier=identifier)
+        result = await self._make_request("GET", url, headers, db_session=db_session, identifier=identifier, team_proxy=team_proxy)
         if not result["success"]:
             return {"success": False, "accounts": [], "error": result["error"]}
         
@@ -320,7 +334,8 @@ class ChatGPTService:
         access_token: str,
         account_id: str,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取账户设置信息 (包含 beta_settings)"""
         url = f"{self.BASE_URL}/accounts/{account_id}/settings"
@@ -328,14 +343,15 @@ class ChatGPTService:
             "Authorization": f"Bearer {access_token}",
             "chatgpt-account-id": account_id
         }
-        return await self._make_request("GET", url, headers, db_session=db_session, identifier=identifier)
+        return await self._make_request("GET", url, headers, db_session=db_session, identifier=identifier, team_proxy=team_proxy)
 
     async def refresh_access_token_with_session_token(
         self,
         session_token: str,
         db_session: DBAsyncSession,
         account_id: Optional[str] = None,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """使用 session_token 刷新 AT (使用标识符隔离会话)"""
         url = "https://chatgpt.com/api/auth/session"
@@ -351,7 +367,7 @@ class ChatGPTService:
         if identifier == "default":
             identifier = f"st_{session_token[:8]}"
 
-        session = await self._get_session(db_session, identifier)
+        session = await self._get_session(db_session, identifier, team_proxy)
         try:
             # 手动合并基础头
             headers["Referer"] = "https://chatgpt.com/"
@@ -390,7 +406,8 @@ class ChatGPTService:
         refresh_token: str,
         client_id: str,
         db_session: DBAsyncSession,
-        identifier: str = "default"
+        identifier: str = "default",
+        team_proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """使用 refresh_token 刷新 AT"""
         url = "https://auth.openai.com/oauth/token"
@@ -405,7 +422,7 @@ class ChatGPTService:
         if identifier == "default":
             identifier = f"rt_{refresh_token[:8]}"
 
-        result = await self._make_request("POST", url, headers, json_data, db_session, identifier)
+        result = await self._make_request("POST", url, headers, json_data, db_session, identifier, team_proxy)
         if result["success"]:
             data = result.get("data", {})
             return {

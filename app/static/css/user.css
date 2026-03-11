@@ -39,7 +39,7 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, inherit;
-    background-color: var(--bg-main);
+    background-color: transparent;
     color: var(--text-main);
     min-height: 100vh;
     display: flex;
@@ -47,6 +47,29 @@ body {
     justify-content: center;
     padding: 1.5rem;
     line-height: 1.5;
+    position: relative;
+}
+
+/* Global blurred background image for user page */
+body::before {
+    content: '';
+    position: fixed;
+    inset: -40px;
+    background-image: url('https://github.com/user-attachments/assets/b00a06b8-9772-4be8-bcc0-503dca71648d');
+    background-size: cover;
+    background-position: center;
+    filter: blur(32px);
+    z-index: -2;
+    pointer-events: none;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(238, 242, 255, 0.80) 0%, rgba(249, 250, 251, 0.85) 100%);
+    z-index: -1;
+    pointer-events: none;
 }
 
 .container {
