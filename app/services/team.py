@@ -641,7 +641,8 @@ class TeamService:
 
             # 6. 更新账号专用代理（空字符串视为清空代理）
             if proxy is not None:
-                team.proxy = proxy.strip() if proxy.strip() else None
+                stripped_proxy = proxy.strip()
+                team.proxy = stripped_proxy if stripped_proxy else None
             
             # 自动维护 active/full/expired 状态 (仅当当前处于这三者之一或刚更新了 max_members/status)
             if team.status in ["active", "full", "expired"]:
@@ -1783,7 +1784,9 @@ class TeamService:
                 "current_members": team.current_members,
                 "max_members": team.max_members,
                 "status": team.status,
+                "account_role": team.account_role or "",
                 "device_code_auth_enabled": team.device_code_auth_enabled,
+                "proxy": team.proxy or "",
                 "last_sync": team.last_sync.isoformat() if team.last_sync else None,
                 "created_at": team.created_at.isoformat() if team.created_at else None
             }
