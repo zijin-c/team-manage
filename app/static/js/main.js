@@ -161,7 +161,7 @@ function switchModalTab(modalId, tabId) {
 }
 
 /**
- * 切换质保时长输入框的显示
+ * 切换质保时长输入框的显示 (保留兼容性，无操作)
  */
 function toggleWarrantyDays(checkbox, targetId) {
     const target = document.getElementById(targetId);
@@ -344,13 +344,11 @@ async function generateSingle(event) {
     const form = event.target;
     const customCode = form.customCode.value.trim();
     const expiresDays = form.expiresDays.value;
-    const hasWarranty = form.hasWarranty.checked;
-    const warrantyDays = form.warrantyDays ? form.warrantyDays.value : 30;
 
     const data = {
         type: 'single',
-        has_warranty: hasWarranty,
-        warranty_days: parseInt(warrantyDays || 30)
+        has_warranty: false,
+        warranty_days: null
     };
     if (customCode) data.code = customCode;
     if (expiresDays) data.expires_days = parseInt(expiresDays);
@@ -379,8 +377,6 @@ async function generateBatch(event) {
     const form = event.target;
     const count = parseInt(form.count.value);
     const expiresDays = form.expiresDays.value;
-    const hasWarranty = form.hasWarranty.checked;
-    const warrantyDays = form.warrantyDays ? form.warrantyDays.value : 30;
 
     if (count < 1 || count > 1000) {
         showToast('生成数量必须在1-1000之间', 'error');
@@ -390,8 +386,8 @@ async function generateBatch(event) {
     const data = {
         type: 'batch',
         count: count,
-        has_warranty: hasWarranty,
-        warranty_days: parseInt(warrantyDays || 30)
+        has_warranty: false,
+        warranty_days: null
     };
     if (expiresDays) data.expires_days = parseInt(expiresDays);
 
