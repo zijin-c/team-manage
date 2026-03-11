@@ -60,8 +60,13 @@ class ChatGPTService:
         """
         根据标识符获取或创建持久会话；若提供了 team_proxy 则强制重建会话以应用新代理
         """
-        # 若提供了账号专用代理，使用代理感知的会话键，防止与无代理会话混用
-        session_key = f"{identifier}:proxy:{team_proxy}" if team_proxy else identifier
+        import hashlib
+        # 若提供了账号专用代理，使用代理的哈希作为会话键后缀，防止与无代理会话混用以及键冲突
+        if team_proxy:
+            proxy_hash = hashlib.md5(team_proxy.encode()).hexdigest()[:8]
+            session_key = f"{identifier}__px{proxy_hash}"
+        else:
+            session_key = identifier
         if session_key not in self._sessions:
             logger.info(f"为标识符 {session_key} 创建新会话")
             self._sessions[session_key] = await self._create_session(db_session, team_proxy)

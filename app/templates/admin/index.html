@@ -714,10 +714,12 @@
             sessionToken = parsed.sessionToken || parsed.session_token || '';
         } catch (e) {
             // 如果不是 JSON，直接当作 accessToken
-            if (raw.startsWith('eyJ')) {
+            // 验证是否是有效的 JWT（三段 base64url 用点分隔，且以 eyJ 开头）
+            const isJWT = raw.startsWith('eyJ') && (raw.split('.').length === 3);
+            if (isJWT) {
                 accessToken = raw;
             } else {
-                showToast('内容格式不正确，请粘贴 JSON 或以 eyJ 开头的 Access Token', 'error');
+                showToast('内容格式不正确，请粘贴 JSON 或以 eyJ 开头的三段式 JWT Access Token', 'error');
                 return;
             }
         }
