@@ -350,7 +350,7 @@ class RedeemFlowService:
                     # 判定是否需要永久标记为“满员”
                     if any(kw in last_error.lower() for kw in ["已满", "seats", "full"]):
                         try:
-                            if not team_id:
+                            if team_id_final:
                                 from sqlalchemy import update as sqlalchemy_update
                                 await db_session.execute(
                                     sqlalchemy_update(Team).where(Team.id == team_id_final).values(status="full")
