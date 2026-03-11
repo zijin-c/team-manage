@@ -6,7 +6,7 @@
 
 ### 一键部署
 ```bash
-git clone https://github.com/tibbar213/team-manage.git
+git clone https://github.com/zijin-c/team-manage.git
 cd team-manage
 cp .env.example .env
 docker compose up -d
@@ -59,6 +59,12 @@ git pull && docker compose down && docker compose up -d --build
   - 手动选择或自动分配 Team
   - 自动发送 Team 邀请到用户邮箱
 
+## 🎨 界面特性
+
+- **移动端适配**：全面优化手机端响应式布局，适配各种屏幕尺寸
+- **简约现代 UI**：重新设计用户界面，更简洁、更美观
+- **流畅体验**：兑换流程简化，操作更直观
+
 ## 🛠️ 技术栈
 
 - **后端框架**: FastAPI 0.109+
@@ -82,7 +88,7 @@ git pull && docker compose down && docker compose up -d --build
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/tibbar213/team-manage.git
+git clone https://github.com/zijin-c/team-manage.git
 cd team-manage
 ```
 
@@ -248,10 +254,7 @@ team-manage/
 ├── docker-compose.yml          # Docker 服务编排文件
 ├── .dockerignore               # Docker 忽略文件
 ├── .env.example                # 环境变量示例
-├── CLAUDE.md                   # Claude Code 指南
-├── 需求.md                     # 项目需求文档
-├── 任务.md                     # 任务跟踪文档
-├── 接口.md                     # API 接口文档
+├── integration_docs.md         # 第三方集成文档
 └── README.md                   # 项目说明文档
 ```
 
@@ -331,7 +334,7 @@ team-manage/
 
 ## 🔌 API 接口
 
-详细的 API 接口文档请参考 [接口.md](接口.md)。
+详细的 API 接口文档请参考 [integration_docs.md](integration_docs.md)。
 
 主要接口：
 
