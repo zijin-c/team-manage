@@ -195,7 +195,8 @@ class TeamService:
         if team.session_token_encrypted:
             session_token = encryption_service.decrypt_token(team.session_token_encrypted)
             refresh_result = await self.chatgpt_service.refresh_access_token_with_session_token(
-                session_token, db_session, account_id=team.account_id, identifier=team.email
+                session_token, db_session, account_id=team.account_id, identifier=team.email,
+                team_proxy=team.proxy or None
             )
             if refresh_result["success"]:
                 new_at = refresh_result["access_token"]
@@ -220,7 +221,8 @@ class TeamService:
         if team.refresh_token_encrypted and team.client_id:
             refresh_token = encryption_service.decrypt_token(team.refresh_token_encrypted)
             refresh_result = await self.chatgpt_service.refresh_access_token_with_refresh_token(
-                refresh_token, team.client_id, db_session, identifier=team.email
+                refresh_token, team.client_id, db_session, identifier=team.email,
+                team_proxy=team.proxy or None
             )
             if refresh_result["success"]:
                 new_at = refresh_result["access_token"]
@@ -570,7 +572,8 @@ class TeamService:
         account_id: Optional[str] = None,
         max_members: Optional[int] = None,
         team_name: Optional[str] = None,
-        status: Optional[str] = None
+        status: Optional[str] = None,
+        proxy: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         更新 Team 信息
@@ -635,6 +638,10 @@ class TeamService:
             # 5. 更新状态
             if status:
                 team.status = status
+
+            # 6. 更新账号专用代理（空字符串视为清空代理）
+            if proxy is not None:
+                team.proxy = proxy.strip() if proxy.strip() else None
             
             # 自动维护 active/full/expired 状态 (仅当当前处于这三者之一或刚更新了 max_members/status)
             if team.status in ["active", "full", "expired"]:
@@ -687,7 +694,8 @@ class TeamService:
                     "team_name": team.team_name,
                     "status": team.status,
                     "account_role": team.account_role,
-                    "device_code_auth_enabled": team.device_code_auth_enabled
+                    "device_code_auth_enabled": team.device_code_auth_enabled,
+                    "proxy": team.proxy or ""
                 }
             }
         except Exception as e:
@@ -862,7 +870,8 @@ class TeamService:
             account_result = await self.chatgpt_service.get_account_info(
                 access_token,
                 db_session,
-                identifier=team.email
+                identifier=team.email,
+                team_proxy=team.proxy or None
             )
 
             if not account_result["success"]:
@@ -888,7 +897,7 @@ class TeamService:
                             }
 
                         # 使用新 Token 再次尝试
-                        account_result = await self.chatgpt_service.get_account_info(new_token, db_session, identifier=team.email)
+                        account_result = await self.chatgpt_service.get_account_info(new_token, db_session, identifier=team.email, team_proxy=team.proxy or None)
                         if account_result["success"]:
                             logger.info(f"Team {team.id} 自动刷新 Token 后重试同步成功")
                         else:
@@ -962,14 +971,16 @@ class TeamService:
                 access_token,
                 current_account["account_id"],
                 db_session,
-                identifier=team.email
+                identifier=team.email,
+                team_proxy=team.proxy or None
             )
             
             invites_result = await self.chatgpt_service.get_invites(
                 access_token,
                 current_account["account_id"],
                 db_session,
-                identifier=team.email
+                identifier=team.email,
+                team_proxy=team.proxy or None
             )
 
             all_member_emails = set()
@@ -1027,7 +1038,8 @@ class TeamService:
                 access_token,
                 current_account["account_id"],
                 db_session,
-                identifier=team.email
+                identifier=team.email,
+                team_proxy=team.proxy or None
             )
             device_code_auth_enabled = team.device_code_auth_enabled
             if settings_result["success"]:
@@ -1192,7 +1204,8 @@ class TeamService:
             members_result = await self.chatgpt_service.get_members(
                 access_token,
                 team.account_id,
-                db_session
+                db_session,
+                team_proxy=team.proxy or None
             )
 
             if not members_result["success"]:
@@ -1222,7 +1235,8 @@ class TeamService:
             invites_result = await self.chatgpt_service.get_invites(
                 access_token,
                 team.account_id,
-                db_session
+                db_session,
+                team_proxy=team.proxy or None
             )
             
             if not invites_result["success"]:
@@ -1333,7 +1347,8 @@ class TeamService:
                 team.account_id,
                 email,
                 db_session,
-                identifier=team.email
+                identifier=team.email,
+                team_proxy=team.proxy or None
             )
 
             if not revoke_result["success"]:
@@ -1442,7 +1457,8 @@ class TeamService:
                 team.account_id,
                 email,
                 db_session,
-                identifier=team.email
+                identifier=team.email,
+                team_proxy=team.proxy or None
             )
 
             if not invite_result["success"]:
@@ -1556,7 +1572,8 @@ class TeamService:
                 team.account_id,
                 user_id,
                 db_session,
-                identifier=team.email
+                identifier=team.email,
+                team_proxy=team.proxy or None
             )
 
             if not delete_result["success"]:
@@ -1634,7 +1651,8 @@ class TeamService:
                 "codex_device_code_auth",
                 True,
                 db_session,
-                identifier=team.email
+                identifier=team.email,
+                team_proxy=team.proxy or None
             )
 
             if not result["success"]:

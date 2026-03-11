@@ -70,6 +70,7 @@ class TeamUpdateRequest(BaseModel):
     max_members: Optional[int] = Field(None, description="最大成员数")
     team_name: Optional[str] = Field(None, description="Team 名称")
     status: Optional[str] = Field(None, description="状态: active/full/expired/error/banned")
+    proxy: Optional[str] = Field(None, description="账号专用代理（留空则使用全局代理）")
 
 
 class CodeUpdateRequest(BaseModel):
@@ -235,7 +236,8 @@ async def update_team(
             client_id=update_data.client_id,
             max_members=update_data.max_members,
             team_name=update_data.team_name,
-            status=update_data.status
+            status=update_data.status,
+            proxy=update_data.proxy
         )
         if not result["success"]:
             return JSONResponse(
