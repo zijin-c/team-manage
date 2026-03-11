@@ -17,6 +17,8 @@
     --success-soft: #ecfdf5;
     --danger: #ef4444;
     --danger-soft: #fef2f2;
+    --info: #3b82f6;
+    --info-soft: #eff6ff;
 
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -54,19 +56,19 @@ body {
 
 .header {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
 }
 
 .header h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 800;
     letter-spacing: -0.025em;
     color: var(--text-main);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.375rem;
 }
 
 .subtitle {
-    font-size: 1rem;
+    font-size: 0.9375rem;
     color: var(--text-muted);
 }
 
@@ -92,14 +94,14 @@ body {
 }
 
 .card h2 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
-    text-align: center;
+    color: var(--text-main);
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .form-group label {
@@ -118,6 +120,8 @@ body {
     font-size: 1rem;
     transition: var(--transition-base);
     outline: none;
+    background: var(--bg-surface);
+    color: var(--text-main);
 }
 
 .form-input:focus {
@@ -133,10 +137,10 @@ body {
 
 .btn {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.8125rem;
     border: none;
     border-radius: var(--radius-md);
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 700;
     cursor: pointer;
     transition: var(--transition-base);
@@ -144,6 +148,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    min-height: 48px;
 }
 
 .btn-primary {
@@ -160,22 +165,44 @@ body {
     transform: translateY(0);
 }
 
+.btn-secondary {
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+    border: 1px solid var(--border-base);
+}
+
+.btn-secondary:hover {
+    background-color: var(--bg-main);
+}
+
 /* Toast */
 .toast {
     position: fixed;
-    top: 2rem;
-    right: 2rem;
-    padding: 1rem 1.5rem;
+    top: 1.5rem;
+    right: 1.5rem;
+    left: 1.5rem;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 1rem 1.25rem;
     background: white;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border-base);
     display: none;
     z-index: 100;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: var(--transition-base);
 }
 
 .toast.show {
-    display: block;
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .toast.success {
@@ -198,41 +225,46 @@ body {
 /* Result */
 .result-success {
     text-align: center;
+    padding: 0.5rem 0;
 }
 
 .result-error {
     text-align: center;
+    padding: 0.5rem 0;
 }
 
 .result-icon {
-    font-size: 3rem;
     margin-bottom: 1rem;
 }
 
 .result-title {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     font-weight: 800;
     margin-bottom: 0.5rem;
 }
 
 .result-message {
     color: var(--text-muted);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9375rem;
 }
 
 .result-details {
     background-color: var(--bg-main);
     border-radius: var(--radius-md);
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     text-align: left;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-base);
 }
 
 .result-detail-item {
     display: flex;
     justify-content: space-between;
-    padding: 0.75rem 0;
+    align-items: center;
+    padding: 0.625rem 0;
     border-bottom: 1px solid var(--border-base);
+    gap: 1rem;
 }
 
 .result-detail-item:last-child {
@@ -240,19 +272,24 @@ body {
 }
 
 .result-detail-label {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--text-muted);
+    flex-shrink: 0;
 }
 
 .result-detail-value {
     font-size: 0.875rem;
     font-weight: 600;
+    text-align: right;
+    word-break: break-all;
 }
 
 /* Mobile Responsiveness */
 @media (max-width: 480px) {
     body {
         padding: 1rem;
+        align-items: flex-start;
+        padding-top: 2rem;
     }
 
     .header {
@@ -268,9 +305,9 @@ body {
     }
 
     .toast {
+        top: 1rem;
         left: 1rem;
         right: 1rem;
-        top: 1rem;
     }
 
     .result-title {
